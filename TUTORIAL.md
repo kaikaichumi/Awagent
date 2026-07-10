@@ -29,6 +29,9 @@ powershell -ExecutionPolicy Bypass -File .\install.ps1
 
 ## 2. 第一次啟動（10 分鐘）
 
+> 若出現 `'waagent' 不是內部或外部命令`：改用 `python -m waagent`（完全等價），
+> 或參考 INSTALL.md 疑難排解把 Python Scripts 目錄加入 PATH。
+
 ### 步驟 1：健康檢查
 
 ```powershell
