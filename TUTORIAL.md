@@ -45,7 +45,7 @@ waagent doctor
 | 1 設定檔 | WARN 可忽略（用預設值）；要改設定才需要建 config.toml |
 | 2 網路 | 填 config 的 proxy / ca_bundle（公司網路才需要） |
 | 3 Copilot | `pip install github-copilot-sdk` + runtime；或登入 GitHub（見下） |
-| 4 AWS | `aws configure sso`（公司）或 `aws configure`（個人帳號） |
+| 4 AWS | 公司：config 填 sso_start_url 後 `waagent login`（Kiro 式登入）；個人帳號：`aws configure` |
 | 5 WA Tool | 同上，另需 IAM 有 wellarchitected 讀取權限 |
 | 6 模板 | INFO 可忽略（用內建模板） |
 | 7 MCP/skills | INFO 可忽略（選配功能） |

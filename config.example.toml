@@ -10,10 +10,17 @@ http_proxy = ""
 ca_bundle = ""
 
 [aws]
-# AWS CLI named profile；留空用預設憑證鏈。
-# 公司走 IAM Identity Center（SSO）者：先 `aws configure sso` 建 profile，
-# 之後每天（token 過期時）`aws sso login --profile <名稱>` 即可。
+# === 方式一（推薦，Kiro 式登入，不需要 AWS CLI）===
+# 填下面兩個值（和 Kiro 登入畫面相同），然後執行 `waagent login`：
+# 瀏覽器會跳出公司 SSO 頁面，輸入帳密 + MFA，選帳號/角色即完成。
+# token 過期（約 8 小時）再跑一次 waagent login 就好。
+sso_start_url = ""            # 例 "https://mycompany.awsapps.com/start"
+sso_region = "us-east-1"      # Kiro 登入畫面上的 Region
+
+# === 方式二：AWS CLI named profile（sso_start_url 留空時才生效）===
 profile = ""
+
+# 要掃描的區域。
 regions = ["ap-northeast-1"]
 
 [copilot]

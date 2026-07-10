@@ -22,6 +22,10 @@ class NetworkConfig(BaseModel):
 class AwsConfig(BaseModel):
     profile: str = ""
     regions: list[str] = Field(default_factory=lambda: ["ap-northeast-1"])
+    # IAM Identity Center 裝置登入（waagent login，Kiro 式體驗）；
+    # sso_start_url 有值時優先於 profile。
+    sso_start_url: str = ""
+    sso_region: str = "us-east-1"
 
 
 class CopilotConfig(BaseModel):

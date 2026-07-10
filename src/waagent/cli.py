@@ -46,20 +46,53 @@ def chat(
 
 
 @app.command()
+def login():
+    """IAM Identity Center 裝置登入（Kiro 式：瀏覽器 + 帳密 + MFA）。"""
+    from rich.prompt import Prompt
+
+    from waagent import awssso
+
+    config = _bootstrap()
+    if not config.aws.sso_start_url:
+        console.print(
+            "[red]尚未設定 SSO。[/red]請在 config.toml 的 [aws] 填：\n"
+            '  sso_start_url = "https://<公司>.awsapps.com/start"   # 同 Kiro 登入畫面的 Start URL\n'
+            '  sso_region    = "us-east-1"                          # 同 Kiro 登入畫面的 Region'
+        )
+        raise typer.Exit(1)
+    try:
+        awssso.device_login(
+            config,
+            prompt=lambda text: Prompt.ask(text),
+            echo=lambda text: console.print(text),
+        )
+        console.print(f"[green]完成。[/green]{awssso.login_status(config)}")
+    except Exception as e:
+        from waagent.scan.runner import friendly_aws_error
+
+        console.print(f"[red]登入失敗: {friendly_aws_error(e)}[/red]")
+        raise typer.Exit(1)
+
+
+@app.command()
 def scan(
     services: list[str] = typer.Option(None, "--service", "-s", help="限定服務（可重複）"),
     regions: list[str] = typer.Option(None, "--region", "-r", help="限定區域（可重複）"),
 ):
     """執行 AWS 掃描與規則引擎（不動用 LLM，可排程使用）。"""
-    from waagent.scan.runner import run_scan
+    from waagent.scan.runner import friendly_aws_error, run_scan
 
     config = _bootstrap()
-    digest = run_scan(
-        config,
-        services=list(services) if services else None,
-        regions=list(regions) if regions else None,
-        progress=lambda msg: console.print(f"[dim]{msg}[/dim]"),
-    )
+    try:
+        digest = run_scan(
+            config,
+            services=list(services) if services else None,
+            regions=list(regions) if regions else None,
+            progress=lambda msg: console.print(f"[dim]{msg}[/dim]"),
+        )
+    except Exception as e:
+        console.print(f"[red]{friendly_aws_error(e, config.aws.profile)}[/red]")
+        raise typer.Exit(1)
     table = Table(title=f"run {digest.run_id}（帳號 {digest.account_id}）")
     table.add_column("Pillar")
     table.add_column("Findings", justify="right")
@@ -131,8 +164,12 @@ def doctor():
 
     console.print("[bold]4. AWS 憑證與連線[/bold]")
     try:
+        from waagent import awssso
         from waagent.scan.runner import friendly_aws_error, get_account_id
 
+        status = awssso.login_status(config)
+        if status:
+            console.print(f"  {status}")
         # fast=True：診斷用短超時（5s 連線/10s 讀取、不重試），網路不通時快速失敗
         account = get_account_id(config, fast=True)
         console.print(f"  [green]OK[/green]  sts get-caller-identity OK（帳號 {account}）")

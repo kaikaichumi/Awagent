@@ -9,19 +9,15 @@ from __future__ import annotations
 import base64
 from pathlib import Path
 
-import boto3
-
 from waagent.config import Config
 from waagent.net import boto_config
 
 
 class WaTool:
     def __init__(self, config: Config, *, fast: bool = False):
-        session = (
-            boto3.Session(profile_name=config.aws.profile)
-            if config.aws.profile
-            else boto3.Session()
-        )
+        from waagent.awssso import make_boto_session
+
+        session = make_boto_session(config)
         region = config.aws.regions[0] if config.aws.regions else "us-east-1"
         self._client = session.client(
             "wellarchitected", region_name=region, config=boto_config(config, fast=fast)

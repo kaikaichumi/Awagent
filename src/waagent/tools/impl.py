@@ -163,13 +163,10 @@ _READONLY_PREFIXES = ("describe_", "list_", "get_", "head_", "lookup_", "filter_
 
 
 def _aws_client(config: Config, service: str, region: str | None = None):
-    import boto3
-
+    from waagent.awssso import make_boto_session
     from waagent.net import boto_config
 
-    session = (
-        boto3.Session(profile_name=config.aws.profile) if config.aws.profile else boto3.Session()
-    )
+    session = make_boto_session(config)
     return session.client(
         service,
         region_name=region or (config.aws.regions[0] if config.aws.regions else None),

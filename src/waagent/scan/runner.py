@@ -34,9 +34,9 @@ _COUNT_KEYS: dict[str, list[tuple[str, str]]] = {
 
 
 def _make_session(config: Config) -> boto3.Session:
-    if config.aws.profile:
-        return boto3.Session(profile_name=config.aws.profile)
-    return boto3.Session()
+    from waagent.awssso import make_boto_session  # SSO 裝置登入 > profile > 預設鏈
+
+    return make_boto_session(config)
 
 
 # IAM Identity Center（SSO）token 過期/未登入時的例外名稱特徵
@@ -47,7 +47,11 @@ _NETWORK_ERROR_NAMES = ("ConnectTimeoutError", "EndpointConnectionError", "Conne
 
 def friendly_aws_error(e: Exception, profile: str = "") -> str:
     """把 boto3 的 SSO / 網路錯誤轉成可行動的訊息。"""
+    from waagent.awssso import SsoLoginRequired
+
     name = type(e).__name__
+    if isinstance(e, SsoLoginRequired):
+        return str(e)  # 訊息本身已含 waagent login 指引
     if any(hint in name for hint in _SSO_ERROR_NAMES) or "sso" in str(e).lower():
         cmd = f"aws sso login --profile {profile}" if profile else "aws sso login"
         return (
