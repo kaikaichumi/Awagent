@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ narrative.title }}</title>
+<style>
+  :root { --border: #d0d7de; --muted: #57606a; --bg-soft: #f6f8fa; }
+  * { box-sizing: border-box; }
+  body { font-family: "Segoe UI", "Microsoft JhengHei", system-ui, sans-serif;
+         margin: 0; color: #1f2328; line-height: 1.65; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 32px 24px 64px; }
+  h1 { font-size: 1.8rem; border-bottom: 2px solid var(--border); padding-bottom: .5rem; }
+  h2 { font-size: 1.35rem; margin-top: 2.2rem; border-bottom: 1px solid var(--border); padding-bottom: .3rem; }
+  h3 { font-size: 1.1rem; margin-top: 1.6rem; }
+  .meta { color: var(--muted); font-size: .9rem; }
+  .meta span { margin-right: 1.5rem; }
+  .charts { display: flex; flex-wrap: wrap; gap: 24px; align-items: center;
+            background: var(--bg-soft); border: 1px solid var(--border);
+            border-radius: 8px; padding: 20px; margin: 1.2rem 0; }
+  .charts svg { max-width: 100%; height: auto; }
+  .chart-radar { flex: 1 1 380px; }
+  .chart-side { flex: 1 1 300px; display: flex; flex-direction: column; gap: 16px; }
+  table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+  th, td { border: 1px solid var(--border); padding: 6px 10px; text-align: left; }
+  th { background: var(--bg-soft); }
+  .table-scroll { overflow-x: auto; }
+  .sev { display: inline-block; padding: 1px 8px; border-radius: 10px;
+         color: #fff; font-size: .78rem; }
+  .pillar-head { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+  .score { color: var(--muted); font-size: .9rem; }
+  details { margin: .6rem 0; }
+  summary { cursor: pointer; color: #0969da; }
+  ul { padding-left: 1.4rem; }
+  .warn { background: #fff8c5; border: 1px solid #d4a72c66; border-radius: 6px;
+          padding: 10px 14px; font-size: .9rem; margin-top: 1.5rem; }
+  code { background: var(--bg-soft); padding: 1px 5px; border-radius: 4px; font-size: .85em; }
+  @media print { .charts { break-inside: avoid; } h2 { break-after: avoid; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>{{ narrative.title }}</h1>
+<p class="meta">
+  <span>AWS 帳號：{{ digest.account_id }}</span>
+  <span>區域：{{ digest.regions | join(", ") }}</span>
+  <span>掃描：{{ digest.scanned_at }}</span>
+  <span>產生：{{ generated_at }}</span>
+</p>
+
+<h2>執行摘要</h2>
+<p>{{ narrative.executive_summary }}</p>
+
+<div class="charts">
+  <div class="chart-radar">{{ radar_svg | safe }}</div>
+  <div class="chart-side">
+    {{ donut_svg | safe }}
+    {{ bar_svg | safe }}
+  </div>
+</div>
+
+<h2>資源概況</h2>
+<div class="table-scroll">
+<table>
+  <tr><th>資源</th><th>數量</th></tr>
+  {% for name, count in digest.resource_counts.items() %}
+  <tr><td>{{ name }}</td><td>{{ count }}</td></tr>
+  {% endfor %}
+</table>
+</div>
+
+<h2>六大支柱評估</h2>
+{% for p in pillars %}
+<section>
+  <div class="pillar-head">
+    <h3>{{ p.name_zh }} <small style="color:var(--muted)">{{ p.name_en }}</small></h3>
+    <span class="score">風險分數 {{ p.risk_score }}/100 ・ {{ p.total }} 項發現</span>
+  </div>
+  <p>{{ p.narrative.assessment }}</p>
+  {% if p.narrative.risks %}
+  <strong>主要風險</strong>
+  <ul>{% for r in p.narrative.risks %}<li>{{ r }}</li>{% endfor %}</ul>
+  {% endif %}
+  {% if p.narrative.remediations %}
+  <strong>修正建議</strong>
+  <ul>{% for r in p.narrative.remediations %}<li>{{ r }}</li>{% endfor %}</ul>
+  {% endif %}
+  {% if p.findings %}
+  <details>
+    <summary>掃描發現明細（{{ p.total }} 項）</summary>
+    <div class="table-scroll">
+    <table>
+      <tr><th>嚴重度</th><th>規則</th><th>資源</th><th>區域</th><th>證據</th></tr>
+      {% for f in p.findings %}
+      <tr>
+        <td><span class="sev" style="background:{{ severity_colors[f.severity.value] }}">{{ f.severity.value }}</span></td>
+        <td>{{ f.title }}</td>
+        <td><code>{{ f.resource }}</code></td>
+        <td>{{ f.region }}</td>
+        <td>{{ f.one_line_evidence }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+    </div>
+  </details>
+  {% endif %}
+</section>
+{% endfor %}
+
+<h2>後續行動</h2>
+<ol>{% for step in narrative.next_steps %}<li>{{ step }}</li>{% endfor %}</ol>
+
+{% if digest.collector_errors %}
+<div class="warn">⚠️ 掃描期間部分資料收集失敗：{{ digest.collector_errors | join("；") }}</div>
+{% endif %}
+{% if digest.truncated %}
+<div class="warn">⚠️ findings 數量過多，本報告僅列出嚴重度最高的前 {{ digest.findings | length }} 項。</div>
+{% endif %}
+</div>
+</body>
+</html>

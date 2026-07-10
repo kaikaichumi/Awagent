@@ -1,0 +1,72 @@
+# waagent 設定範例。
+# 複製到 %APPDATA%\waagent\config.toml（全域）或專案根目錄 .waagent.toml（專案覆蓋）。
+# 優先順序：環境變數 > 專案 .waagent.toml > 全域 config.toml > 內建預設值。
+
+[network]
+# 公司 proxy。留空則沿用 HTTPS_PROXY / HTTP_PROXY 環境變數。
+https_proxy = ""
+http_proxy = ""
+# 公司 TLS 攔截用的 CA bundle（PEM）。留空則用系統預設。
+ca_bundle = ""
+
+[aws]
+# AWS CLI named profile；留空用預設憑證鏈。
+# 公司走 IAM Identity Center（SSO）者：先 `aws configure sso` 建 profile，
+# 之後每天（token 過期時）`aws sso login --profile <名稱>` 即可。
+profile = ""
+regions = ["ap-northeast-1"]
+
+[copilot]
+# 模型："auto" = waagent 本地路由（非 Copilot 的 auto！由下方 auto_* 規則決定），
+# 或直接指定模型 id（如 "gpt-5"、"claude-sonnet-4.6"）。
+model = "auto"
+# auto 路由的地板模型（子字串比對 model id）——最低就用這個等級，不會更低。
+auto_floor = "sonnet"
+# auto 路由的升級模型；留空 = 自動選企業已啟用中最強者。
+auto_strong = ""
+# 觸發升級的關鍵詞（空 = 用內建：設計/架構/重構/根因/報告…）。
+auto_keywords = []
+# 分析圖片時使用的模型；留空 = 同 model。
+vision_model = ""
+# 認證：預設重用已登入的 GitHub 憑證（gh auth / Copilot CLI 登入）。
+# 也可設 COPILOT_GITHUB_TOKEN / GH_TOKEN 環境變數。
+use_logged_in_user = true
+# 推理強度：low / medium / high；留空 = SDK 預設。
+reasoning_effort = ""
+# context 層級：default / long_context；留空 = SDK 預設。
+context_tier = ""
+# 自動壓縮門檻：context 用到 80% 背景壓縮、95% 阻塞等壓縮完成。
+compaction_start = 0.80
+compaction_block = 0.95
+# 單一 session 的 AI credits 上限（0 = 不限制）——防止額度意外爆掉。
+max_ai_credits = 0.0
+# 單回合最長等待秒數。
+turn_timeout = 1800.0
+# 額外的 skill 目錄（絕對或相對路徑皆可，會展開成絕對路徑傳給 SDK）。
+# 非空時自動開啟 SDK 的 skills 功能；留空 = 不啟用。
+skill_directories = []
+
+# MCP servers：每個子表對應一個 server，欄位原樣傳給 Copilot SDK。
+# 至少要有 command 或 url 其中之一，缺兩者的項目載入時會被忽略（不會報錯）。
+# 下面兩個範例都是註解，需要時取消註解並依實際情況調整。
+
+# [mcp.filesystem]
+# command 型（本機子行程，stdio 通訊）。
+# command = "npx"
+# args = ["-y", "@modelcontextprotocol/server-filesystem", "F:/coding"]
+# env = { }
+
+# [mcp.remote-example]
+# url 型（遠端 HTTP/SSE server）。
+# url = "https://example.com/mcp"
+# headers = { }
+
+[wa]
+# 報告模板/規則資料夾（每次評估全量重讀，可隨時增修檔案）。
+templates_dir = ""
+# 報告輸出目錄；留空 = 目前目錄。
+output_dir = ""
+# 綁定既有 WA Tool workload id（可選；wa-sync 寫回用）。
+workload_id = ""
+# WA Tool lens alias。
+lens_alias = "wellarchitected"

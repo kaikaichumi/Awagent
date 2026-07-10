@@ -1,0 +1,19 @@
+# 離線安裝包（含 129MB Copilot runtime，超過 GitHub 檔案上限；用 build 腳本重建）
+bundle/
+waagent-bundle.zip
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+
+# 工具
+.pytest_cache/
+.ruff_cache/
+
+# 本機設定（含 proxy/帳號資訊，不入版控）
+.waagent.toml

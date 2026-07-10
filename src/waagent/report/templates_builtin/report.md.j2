@@ -1,0 +1,65 @@
+# {{ narrative.title }}
+
+- **AWS 帳號**：{{ digest.account_id }}
+- **掃描區域**：{{ digest.regions | join(", ") }}
+- **掃描時間**：{{ digest.scanned_at }}
+- **報告產生**：{{ generated_at }}
+
+## 執行摘要
+
+{{ narrative.executive_summary }}
+
+## 資源概況
+
+| 資源 | 數量 |
+|---|---|
+{% for name, count in digest.resource_counts.items() -%}
+| {{ name }} | {{ count }} |
+{% endfor %}
+
+## 六大支柱評估
+
+{% for p in pillars %}
+### {{ p.name_zh }} ({{ p.name_en }})
+
+**風險分數**：{{ p.risk_score }} / 100　**發現項目**：{{ p.total }}
+{%- for sev, count in p.by_severity.items() %} {{ sev }}×{{ count }}{% endfor %}
+
+{{ p.narrative.assessment }}
+
+{% if p.narrative.risks -%}
+**主要風險**
+{% for r in p.narrative.risks %}
+- {{ r }}
+{%- endfor %}
+{% endif %}
+{% if p.narrative.remediations -%}
+**修正建議**
+{% for r in p.narrative.remediations %}
+- {{ r }}
+{%- endfor %}
+{% endif %}
+{% if p.findings -%}
+<details><summary>掃描發現明細（{{ p.total }} 項）</summary>
+
+| 嚴重度 | 規則 | 資源 | 證據 |
+|---|---|---|---|
+{% for f in p.findings -%}
+| {{ f.severity.value }} | {{ f.title }} | `{{ f.resource }}` | {{ f.one_line_evidence }} |
+{% endfor %}
+</details>
+{% endif %}
+{% endfor %}
+
+## 後續行動
+
+{% for step in narrative.next_steps %}
+{{ loop.index }}. {{ step }}
+{%- endfor %}
+
+{% if digest.collector_errors %}
+> ⚠️ 掃描期間部分資料收集失敗：{{ digest.collector_errors | join("；") }}
+{% endif %}
+{% if digest.truncated %}
+> ⚠️ findings 數量過多，本報告僅列出嚴重度最高的前 {{ digest.findings | length }} 項。
+{% endif %}
