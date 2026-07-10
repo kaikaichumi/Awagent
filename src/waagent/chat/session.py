@@ -26,6 +26,17 @@ class CopilotNotInstalled(RuntimeError):
     pass
 
 
+class CopilotAuthRequired(RuntimeError):
+    pass
+
+
+AUTH_GUIDE = (
+    "GitHub Copilot 尚未登入。請執行：\n"
+    "  waagent login github\n"
+    "（跳瀏覽器 OAuth 授權；或設定環境變數 COPILOT_GITHUB_TOKEN）"
+)
+
+
 def _import_sdk():
     try:
         from copilot import CopilotClient  # type: ignore
@@ -133,6 +144,21 @@ class ChatSession:
         CopilotClient = _import_sdk()
         self._client = CopilotClient()
         await self._client.start()
+
+        # 認證預檢：在 create_session 前把「未登入」轉成明確指引，
+        # 避免之後才收到難懂的 SessionErrorData(type=authentication)
+        try:
+            status = await self._client.get_auth_status()
+            if not getattr(status, "is_authenticated", True):
+                raise CopilotAuthRequired(AUTH_GUIDE)
+            user = getattr(status, "login", "") or ""
+            if user:
+                self._cb.on_notice(f"Copilot 已登入：{user}")
+        except CopilotAuthRequired:
+            await self._client.stop()
+            raise
+        except Exception:
+            pass  # 狀態查詢失敗不擋流程，讓後續錯誤自然浮現
 
         if self._config.copilot.model.lower() == "auto":
             await self._init_auto_router()
@@ -382,5 +408,9 @@ class ChatSession:
         elif name in ("SessionIdleData", "AssistantIdleData"):
             self._idle.set()
         elif name == "SessionErrorData":
-            self._cb.on_notice(f"session 錯誤: {data}")
+            detail = str(data)
+            if "authentication" in detail.lower():
+                self._cb.on_notice(f"session 認證錯誤。{AUTH_GUIDE}")
+            else:
+                self._cb.on_notice(f"session 錯誤: {detail}")
             self._idle.set()

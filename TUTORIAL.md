@@ -50,10 +50,15 @@ waagent doctor
 | 6 模板 | INFO 可忽略（用內建模板） |
 | 7 MCP/skills | INFO 可忽略（選配功能） |
 
-### 步驟 2：GitHub Copilot 登入（擇一）
+### 步驟 2：登入兩邊
 
-- 電腦已登入過 `gh auth login` 或 VS Code Copilot → 什麼都不用做
-- 沒有的話：第一次 `waagent chat` 會跳裝置授權，照畫面到 github.com 輸入代碼
+```powershell
+waagent login github     # GitHub Copilot：跳瀏覽器 OAuth 授權一次即可
+waagent login            # AWS（公司 SSO，需先在 config 填 sso_start_url）
+```
+
+Copilot 備援：設環境變數 `COPILOT_GITHUB_TOKEN`（有 Copilot 授權帳號的 token）。
+沒登入就 chat 會直接提示你執行上面的指令。
 
 ### 步驟 3：開聊
 
@@ -86,7 +91,8 @@ coder> 你好，介紹一下你自己有哪些工具
 
 ```
 /mode wa-review     切換模式
-/image 架構圖.png   附圖給 AI 看
+/image 架構圖.png   附圖片檔給 AI（把檔案拖進終端機視窗會自動貼上路徑）
+/paste              附剪貼簿圖片（Win+Shift+S 截圖 → /paste）
 /scan               執行 AWS 掃描
 /report             產生報告
 /diff               比較最近兩次掃描

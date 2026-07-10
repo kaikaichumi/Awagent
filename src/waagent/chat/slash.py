@@ -8,7 +8,8 @@ from pathlib import Path
 HELP_TEXT = """\
 可用指令：
   /mode [coder|aws-debug|wa-review]  顯示或切換模式（開新 session）
-  /image <路徑>            附加圖片到下一則訊息（架構圖、錯誤截圖等）
+  /image <路徑>            附加圖片檔到下一則訊息（架構圖、錯誤截圖等）
+  /paste                   附加剪貼簿中的圖片（先 Win+Shift+S 截圖再 /paste）
   /scan                    請 agent 執行 AWS 掃描
   /report                  請 agent 依模板規則產生報告
   /diff                    請 agent 比較最近兩次掃描（修正驗證）
@@ -81,6 +82,8 @@ def handle_slash(line: str, current_mode: str, available_modes: list[str]) -> Sl
         return SlashResult(
             send_text="請呼叫 compare_runs 比較最近兩次掃描，總結哪些風險已修復、哪些是新出現的，並建議下一步。"
         )
+    if cmd == "/paste":
+        return SlashResult(action="paste")
     if cmd == "/resume":
         return SlashResult(action="resume", action_arg=arg)
     if cmd == "/usage":

@@ -26,6 +26,18 @@ def _bootstrap() -> Config:
     return config
 
 
+async def _copilot_auth_status():
+    """doctor 用：啟動 runtime 查認證狀態後立即關閉。"""
+    from copilot import CopilotClient
+
+    client = CopilotClient()
+    await client.start()
+    try:
+        return await client.get_auth_status()
+    finally:
+        await client.stop()
+
+
 @app.callback(invoke_without_command=True)
 def default(ctx: typer.Context):
     """不帶子命令時直接進入 chat REPL。"""
@@ -46,13 +58,50 @@ def chat(
 
 
 @app.command()
-def login():
+def login(
+    target: str = typer.Argument("aws", help="aws（IAM Identity Center，Kiro 式）或 github（Copilot）"),
+):
+    """登入：waagent login = AWS SSO；waagent login github = GitHub Copilot。"""
+    config = _bootstrap()
+    if target.lower() == "github":
+        _login_github()
+        return
+    _login_aws(config)
+
+
+def _login_github():
+    """GitHub Copilot 登入：呼叫內附 runtime（Copilot CLI）的 OAuth 裝置流。"""
+    import subprocess
+
+    try:
+        from copilot._cli_download import get_cached_cli_path
+
+        exe = get_cached_cli_path()
+    except ImportError:
+        console.print("[red]github-copilot-sdk 未安裝。[/red]")
+        raise typer.Exit(1)
+    if not exe:
+        console.print("[red]找不到 Copilot runtime。[/red]請先執行 python -m copilot download-runtime")
+        raise typer.Exit(1)
+
+    console.print("[dim]啟動 GitHub Copilot 裝置登入（瀏覽器將跳出授權頁）…[/dim]")
+    result = subprocess.run([exe, "login"])
+    if result.returncode == 0:
+        console.print("[green]GitHub Copilot 登入完成。[/green]執行 waagent chat 開始使用。")
+    else:
+        console.print(
+            "[red]登入未完成。[/red]備援：設定環境變數 COPILOT_GITHUB_TOKEN"
+            "（有 Copilot 授權之帳號的 token）後重試。"
+        )
+        raise typer.Exit(1)
+
+
+def _login_aws(config: Config):
     """IAM Identity Center 裝置登入（Kiro 式：瀏覽器 + 帳密 + MFA）。"""
     from rich.prompt import Prompt
 
     from waagent import awssso
 
-    config = _bootstrap()
     if not config.aws.sso_start_url:
         console.print(
             "[red]尚未設定 SSO。[/red]請在 config.toml 的 [aws] 填：\n"
@@ -159,8 +208,19 @@ def doctor():
     token_keys = [k for k in ("COPILOT_GITHUB_TOKEN", "GH_TOKEN", "GITHUB_TOKEN") if os.environ.get(k)]
     if token_keys:
         console.print(f"  [green]OK[/green]  找到 token 環境變數: {', '.join(token_keys)}")
-    else:
-        console.print("  [cyan]INFO[/cyan] 無 token 環境變數，將使用已登入的 GitHub 憑證（gh auth / Copilot CLI 登入）")
+    # 真實認證檢查：啟動 runtime 問 auth 狀態（含 proxy 驗證）
+    try:
+        auth = asyncio.run(asyncio.wait_for(_copilot_auth_status(), timeout=30))
+        if getattr(auth, "is_authenticated", False):
+            user = getattr(auth, "login", "") or "?"
+            console.print(f"  [green]OK[/green]  Copilot 已登入（{user}）")
+        else:
+            console.print("  [red]FAIL[/red] Copilot 未登入——執行 waagent login github")
+            ok = False
+    except Exception as e:
+        console.print(f"  [red]FAIL[/red] Copilot runtime 啟動/認證檢查失敗: {e}")
+        console.print("        （公司網路請先確認第 2 關 proxy；未登入請執行 waagent login github）")
+        ok = False
 
     console.print("[bold]4. AWS 憑證與連線[/bold]")
     try:

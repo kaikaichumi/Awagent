@@ -9,7 +9,13 @@ from rich.console import Console
 from rich.table import Table
 
 from waagent.agents.registry import get_agent_specs
-from waagent.chat.session import Attachment, ChatSession, CopilotNotInstalled, SessionCallbacks
+from waagent.chat.session import (
+    Attachment,
+    ChatSession,
+    CopilotAuthRequired,
+    CopilotNotInstalled,
+    SessionCallbacks,
+)
 from waagent.chat.slash import handle_slash, image_mime
 from waagent.config import Config
 from waagent.memory import MEMORY_PATH, read_memory
@@ -109,6 +115,19 @@ async def _handle_action(
         console.print(table)
         return None
 
+    if action == "paste":
+        import asyncio
+
+        from waagent.chat.clipboard import save_clipboard_image
+
+        path = await asyncio.to_thread(save_clipboard_image)
+        if path:
+            session.queue_attachment(Attachment(path=path, mime_type="image/png"))
+            console.print(f"已附加剪貼簿圖片（{path}），隨下一則訊息送出。")
+        else:
+            console.print("剪貼簿裡沒有圖片。先用 Win+Shift+S 截圖再 /paste。")
+        return None
+
     if action == "memory":
         text = read_memory()
         if text.strip():
@@ -193,7 +212,7 @@ async def _open_session(config: Config, mode: str, resume: str = "") -> ChatSess
         if session.session_id:
             console.print(f"[dim]session: {session.session_id}[/dim]")
         return session
-    except CopilotNotInstalled as e:
+    except (CopilotNotInstalled, CopilotAuthRequired) as e:
         console.print(f"[red]{e}[/red]")
         return None
     except Exception as e:
