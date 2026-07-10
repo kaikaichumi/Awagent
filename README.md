@@ -3,6 +3,8 @@
 用**公司 GitHub Copilot 企業版額度**驅動的 AWS Well-Architected AI agent，
 同時也是一個類 Claude Code 的日常終端 coding agent。
 
+> 新手請直接看 **[TUTORIAL.md](TUTORIAL.md)** —— 從安裝到產出第一份報告的完整教學。
+
 ## 功能
 
 - **`coder` 模式（預設）**：Copilot SDK agent 全功能——多輪對話、編輯檔案、執行命令。
