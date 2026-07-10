@@ -16,7 +16,7 @@ from waagent.net import boto_config
 
 
 class WaTool:
-    def __init__(self, config: Config):
+    def __init__(self, config: Config, *, fast: bool = False):
         session = (
             boto3.Session(profile_name=config.aws.profile)
             if config.aws.profile
@@ -24,7 +24,7 @@ class WaTool:
         )
         region = config.aws.regions[0] if config.aws.regions else "us-east-1"
         self._client = session.client(
-            "wellarchitected", region_name=region, config=boto_config(config)
+            "wellarchitected", region_name=region, config=boto_config(config, fast=fast)
         )
         self._lens = config.wa.lens_alias or "wellarchitected"
 

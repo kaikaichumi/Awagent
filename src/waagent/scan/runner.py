@@ -41,10 +41,12 @@ def _make_session(config: Config) -> boto3.Session:
 
 # IAM Identity Center（SSO）token 過期/未登入時的例外名稱特徵
 _SSO_ERROR_NAMES = ("SSOTokenLoadError", "UnauthorizedSSOTokenError", "TokenRetrievalError", "SSOError")
+# 連不到端點（公司網路直連被擋、proxy 沒生效）的例外名稱特徵
+_NETWORK_ERROR_NAMES = ("ConnectTimeoutError", "EndpointConnectionError", "ConnectionClosedError", "ProxyConnectionError", "ReadTimeoutError")
 
 
 def friendly_aws_error(e: Exception, profile: str = "") -> str:
-    """把 boto3 的 SSO 相關錯誤轉成可行動的訊息。"""
+    """把 boto3 的 SSO / 網路錯誤轉成可行動的訊息。"""
     name = type(e).__name__
     if any(hint in name for hint in _SSO_ERROR_NAMES) or "sso" in str(e).lower():
         cmd = f"aws sso login --profile {profile}" if profile else "aws sso login"
@@ -52,12 +54,18 @@ def friendly_aws_error(e: Exception, profile: str = "") -> str:
             f"AWS SSO 憑證失效或尚未登入（{name}）。"
             f"請先執行 `{cmd}` 完成 IAM Identity Center 登入後重試。"
         )
+    if any(hint in name for hint in _NETWORK_ERROR_NAMES):
+        return (
+            f"連不到 AWS 端點（{name}）。公司網路多半是 proxy 未生效——"
+            f"請在 config.toml 的 [network] 填 https_proxy（必要時加 ca_bundle），"
+            f"或確認 HTTPS_PROXY 環境變數。"
+        )
     return str(e)
 
 
-def get_account_id(config: Config) -> str:
+def get_account_id(config: Config, *, fast: bool = False) -> str:
     session = _make_session(config)
-    sts = session.client("sts", config=boto_config(config))
+    sts = session.client("sts", config=boto_config(config, fast=fast))
     try:
         return sts.get_caller_identity()["Account"]
     except (BotoCoreError, ClientError) as e:

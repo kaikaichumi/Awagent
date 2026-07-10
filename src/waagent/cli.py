@@ -133,7 +133,8 @@ def doctor():
     try:
         from waagent.scan.runner import friendly_aws_error, get_account_id
 
-        account = get_account_id(config)
+        # fast=True：診斷用短超時（5s 連線/10s 讀取、不重試），網路不通時快速失敗
+        account = get_account_id(config, fast=True)
         console.print(f"  [green]OK[/green]  sts get-caller-identity OK（帳號 {account}）")
     except Exception as e:
         console.print(f"  [red]FAIL[/red] AWS 連線失敗: {friendly_aws_error(e, config.aws.profile)}")
@@ -143,7 +144,7 @@ def doctor():
     try:
         from waagent.wa.watool import WaTool
 
-        lenses = WaTool(config).list_lenses()
+        lenses = WaTool(config, fast=True).list_lenses()
         console.print(f"  [green]OK[/green]  list-lenses OK（{len(lenses)} 個 lens）")
     except Exception as e:
         console.print(

@@ -52,12 +52,20 @@ def effective_ca_bundle() -> str | None:
     return None
 
 
-def boto_config(config: Config) -> BotoConfig:
-    """所有 boto3 client 共用的 Config：proxy、CA、重試、UA。"""
+def boto_config(config: Config, *, fast: bool = False) -> BotoConfig:
+    """所有 boto3 client 共用的 Config：proxy、CA、重試、UA。
+
+    fast=True 給 doctor 等診斷用途：短超時、不重試，網路不通時快速失敗
+    而不是卡住等重試。
+    """
     kwargs: dict = {
         "retries": {"max_attempts": 8, "mode": "adaptive"},
         "user_agent_extra": "waagent",
     }
+    if fast:
+        kwargs["retries"] = {"max_attempts": 1}
+        kwargs["connect_timeout"] = 5
+        kwargs["read_timeout"] = 10
     proxies = effective_proxies()
     if proxies:
         kwargs["proxies"] = proxies
