@@ -210,8 +210,10 @@ def doctor():
         console.print(f"  [green]OK[/green]  找到 token 環境變數: {', '.join(token_keys)}")
     # 真實認證檢查：啟動 runtime 問 auth 狀態（含 proxy 驗證）
     try:
+        from waagent.chat.session import auth_status_flag
+
         auth = asyncio.run(asyncio.wait_for(_copilot_auth_status(), timeout=30))
-        if getattr(auth, "is_authenticated", False):
+        if auth_status_flag(auth):
             user = getattr(auth, "login", "") or "?"
             console.print(f"  [green]OK[/green]  Copilot 已登入（{user}）")
         else:

@@ -37,6 +37,20 @@ AUTH_GUIDE = (
 )
 
 
+def auth_status_flag(status: Any) -> bool | None:
+    """跨 SDK 版本讀取認證狀態。
+
+    SDK 1.0.x 的 get_auth_status() 回傳 GetAuthStatusResponse，欄位是
+    camelCase 的 isAuthenticated；部分內部型別（SessionAuthStatus）則是
+    snake_case 的 is_authenticated。回傳 None 代表兩者都不存在（無法判讀）。
+    """
+    for name in ("isAuthenticated", "is_authenticated"):
+        val = getattr(status, name, None)
+        if val is not None:
+            return bool(val)
+    return None
+
+
 def _import_sdk():
     try:
         from copilot import CopilotClient  # type: ignore
@@ -149,7 +163,7 @@ class ChatSession:
         # 避免之後才收到難懂的 SessionErrorData(type=authentication)
         try:
             status = await self._client.get_auth_status()
-            if not getattr(status, "is_authenticated", True):
+            if auth_status_flag(status) is False:
                 raise CopilotAuthRequired(AUTH_GUIDE)
             user = getattr(status, "login", "") or ""
             if user:
