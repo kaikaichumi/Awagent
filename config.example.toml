@@ -1,5 +1,6 @@
 # waagent 設定範例。
-# 複製到 %APPDATA%\waagent\config.toml（全域）或專案根目錄 .waagent.toml（專案覆蓋）。
+# 複製到 %LOCALAPPDATA%\waagent\config.toml（全域）或專案根目錄 .waagent.toml（專案覆蓋）。
+# 實際全域路徑以 `waagent doctor` 第 1 關顯示為準。
 # 優先順序：環境變數 > 專案 .waagent.toml > 全域 config.toml > 內建預設值。
 
 [network]

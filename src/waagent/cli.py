@@ -191,7 +191,11 @@ def doctor():
         for source in config.sources:
             console.print(f"  [green]OK[/green]  {source}")
     else:
+        from waagent.config import GLOBAL_CONFIG_PATH, PROJECT_CONFIG_NAME
+
         console.print("  [yellow]WARN[/yellow] 未找到設定檔，全部使用預設值（參考 config.example.toml）")
+        console.print(f"        全域: {GLOBAL_CONFIG_PATH}")
+        console.print(f"        專案: 目前目錄（或上層）的 {PROJECT_CONFIG_NAME}")
 
     console.print("[bold]2. 網路（proxy / CA）[/bold]")
     for key, value in network_report(config):

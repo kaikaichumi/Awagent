@@ -46,8 +46,9 @@ python -m copilot download-runtime   # 下載 Copilot agent runtime
 
 ## 設定
 
-複製 `config.example.toml` 到 `%APPDATA%\waagent\config.toml`（或專案根目錄 `.waagent.toml`），
-填入 proxy、CA bundle、AWS profile/region、模板資料夾等。
+複製 `config.example.toml` 到 `%LOCALAPPDATA%\waagent\config.toml`（或專案根目錄 `.waagent.toml`），
+填入 proxy、CA bundle、AWS profile/region、模板資料夾等。全域設定的實際路徑依作業系統而異，
+以 `waagent doctor` 第 1 關顯示的路徑為準。
 
 MCP servers 與 skills 皆為選配：`[mcp.<name>]` 子表原樣傳給 Copilot SDK（至少要有 `command`
 或 `url` 其一，缺兩者的項目會被忽略），`[copilot] skill_directories` 則指定額外 skill 資料夾。
